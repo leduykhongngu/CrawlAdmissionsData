@@ -33,8 +33,19 @@ def format_float(s: str):
     return float(s)
 
 
+BASE_URL = ("http://sgdbinhduong.edu.vn/Tracuudiem/Tuyensinh10/tabid/294/NamThi/"
+            "2020/DotThiId/34/ThiSinhId/{}/Default.aspx")
+
+HEADING = [u"Tên", u"SBD", u"Ngày sinh", u"Giới Tính", u"Nơi sinh", u"Trường", u"Nguyện vọng 1",
+           u"Nguyện vọng 2", u"Chuyên 1", u"Chuyên 2", u"Điểm ưu tiên", u"Văn", u"Anh", u"Toán",
+           u"Chuyên 1", u"Chuyên 2", u"Tổng", u"Tổng chuyên 1", u"Tổng chuyên 2"]
+
+
 class Student:
-    def __init__(this, data):
+    def __init__(this, id):
+        soup = BeautifulSoup(requests.get(BASE_URL.format(id)).text, "html.parser")
+        data = soup.tbody.find_all("tr")
+
         this.name = format_string(data[0].th.span.string)
         this.id = format_int(data[1].td.string)
         this.birthday = format_string(data[2].td.string)
@@ -57,27 +68,27 @@ class Student:
         this.sum_chuyen1 = format_float(tmp[1])
         this.sum_chuyen2 = format_float(tmp[2])
 
+    def get_data_as_list(self):
+        return [self.name, self.id, self.birthday, self.sex, self.born_in, self.sec_school,
+                self.nv1, self.nv2, self.nvC1, self.nvC2, self.priority_points, self.p_van,
+                self.p_anh, self.p_toan, self.p_chuyen1, self.p_chuyen2, self.sum_TVA,
+                self.sum_chuyen1, self.sum_chuyen2]
 
-BASE_URL = "http://sgdbinhduong.edu.vn/Tracuudiem/Tuyensinh10/tabid/294/NamThi/2020/DotThiId/34/ThiSinhId/{}/Default.aspx"
+    def __str__(self):
+        global HEADING
+        data = self.get_data_as_list()
+        return '\n'.join([name + ': ' + str(val) for name, val in zip(HEADING, data)])
 
-heading = [u"Tên", u"SBD", u"Ngày sinh", u"Giới Tính", u"Nơi sinh", u"Trường", u"Nguyện vọng 1",
-           u"Nguyện vọng 2", u"Chuyên 1", u"Chuyên 2", u"Điểm ưu tiên", u"Văn", u"Anh", u"Toán",
-           u"Chuyên 1", u"Chuyên 2", u"Tổng", u"Tổng chuyên 1", u"Tổng chuyên 2"]
 
 with open("Tuyensinh10.csv", "ab") as writeFile:
     writer = csv.writer(writeFile, encoding="utf-8")
-    writer.writerow(heading)
+    # writer.writerow(HEADING)
     L = 149774
     # R = 149780
     R = 150486
     for i in range(L, R+1):
         print("Geting", i)
-        x = requests.get(BASE_URL.format(i)).text
-        soup = BeautifulSoup(x, "html.parser")
-        Test = Student(soup.tbody.find_all("tr"))
-        writer.writerow([Test.name, Test.id, Test.birthday, Test.sex, Test.born_in, Test.sec_school,
-                         Test.nv1, Test.nv2, Test.nvC1, Test.nvC2, Test.priority_points, Test.p_van,
-                         Test.p_anh, Test.p_toan, Test.p_chuyen1, Test.p_chuyen2, Test.sum_TVA,
-                         Test.sum_chuyen1, Test.sum_chuyen2])
+        student = Student(i)
+        writer.writerow(student.get_data_as_list())
 
 writeFile.close()
